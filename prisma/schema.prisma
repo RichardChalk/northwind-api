@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Categories {
+  CategoryID   Int        @id(map: "PK_Categories") @default(autoincrement())
+  CategoryName String     @db.NVarChar(15)
+  Description  String?    @db.NText
+  Picture      Bytes?     @db.Image
+  Products     Products[]
+
+  @@index([CategoryName], map: "CategoryName")
+}
+
+model CustomerCustomerDemo {
+  CustomerID           String               @db.NChar(5)
+  CustomerTypeID       String               @db.NChar(10)
+  CustomerDemographics CustomerDemographics @relation(fields: [CustomerTypeID], references: [CustomerTypeID], onUpdate: NoAction, map: "FK_CustomerCustomerDemo")
+  Customers            Customers            @relation(fields: [CustomerID], references: [CustomerID], onUpdate: NoAction, map: "FK_CustomerCustomerDemo_Customers")
+
+  @@id([CustomerID, CustomerTypeID], map: "PK_CustomerCustomerDemo", clustered: false)
+}
+
+model CustomerDemographics {
+  CustomerTypeID       String                 @id(clustered: false, map: "PK_CustomerDemographics") @db.NChar(10)
+  CustomerDesc         String?                @db.NText
+  CustomerCustomerDemo CustomerCustomerDemo[]
+}
+
+model Customers {
+  CustomerID           String                 @id(map: "PK_Customers") @db.NChar(5)
+  CompanyName          String                 @db.NVarChar(40)
+  ContactName          String?                @db.NVarChar(30)
+  ContactTitle         String?                @db.NVarChar(30)
+  Address              String?                @db.NVarChar(60)
+  City                 String?                @db.NVarChar(15)
+  Region               String?                @db.NVarChar(15)
+  PostalCode           String?                @db.NVarChar(10)
+  Country              String?                @db.NVarChar(15)
+  Phone                String?                @db.NVarChar(24)
+  Fax                  String?                @db.NVarChar(24)
+  Active               Boolean?
+  CustomerCustomerDemo CustomerCustomerDemo[]
+  Orders               Orders[]
+
+  @@index([City], map: "City")
+  @@index([CompanyName], map: "CompanyName")
+  @@index([PostalCode], map: "PostalCode")
+  @@index([Region], map: "Region")
+}
+
+model Employees {
+  EmployeeID          Int                   @id(map: "PK_Employees") @default(autoincrement())
+  LastName            String                @db.NVarChar(20)
+  FirstName           String                @db.NVarChar(10)
+  Title               String?               @db.NVarChar(30)
+  TitleOfCourtesy     String?               @db.NVarChar(25)
+  BirthDate           DateTime?             @db.DateTime
+  HireDate            DateTime?             @db.DateTime
+  Address             String?               @db.NVarChar(60)
+  City                String?               @db.NVarChar(15)
+  Region              String?               @db.NVarChar(15)
+  PostalCode          String?               @db.NVarChar(10)
+  Country             String?               @db.NVarChar(15)
+  HomePhone           String?               @db.NVarChar(24)
+  Extension           String?               @db.NVarChar(4)
+  Photo               Bytes?                @db.Image
+  Notes               String?               @db.NText
+  ReportsTo           Int?
+  PhotoPath           String?               @db.NVarChar(255)
+  Employees           Employees?            @relation("EmployeesToEmployees", fields: [ReportsTo], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Employees_Employees")
+  other_Employees     Employees[]           @relation("EmployeesToEmployees")
+  EmployeeTerritories EmployeeTerritories[]
+  Orders              Orders[]
+
+  @@index([LastName], map: "LastName")
+  @@index([PostalCode], map: "PostalCode")
+}
+
+model EmployeeTerritories {
+  EmployeeID  Int
+  TerritoryID String      @db.NVarChar(20)
+  Employees   Employees   @relation(fields: [EmployeeID], references: [EmployeeID], onUpdate: NoAction, map: "FK_EmployeeTerritories_Employees")
+  Territories Territories @relation(fields: [TerritoryID], references: [TerritoryID], onUpdate: NoAction, map: "FK_EmployeeTerritories_Territories")
+
+  @@id([EmployeeID, TerritoryID], map: "PK_EmployeeTerritories", clustered: false)
+}
+
+model Order_Details {
+  OrderID   Int
+  ProductID Int
+  UnitPrice Float    @default(0, map: "DF_Order_Details_UnitPrice") @db.Money
+  Quantity  Int      @default(1, map: "DF_Order_Details_Quantity") @db.SmallInt
+  Discount  Float    @default(0, map: "DF_Order_Details_Discount") @db.Real
+  Orders    Orders   @relation(fields: [OrderID], references: [OrderID], onUpdate: NoAction, map: "FK_Order_Details_Orders")
+  Products  Products @relation(fields: [ProductID], references: [ProductID], onUpdate: NoAction, map: "FK_Order_Details_Products")
+
+  @@id([OrderID, ProductID], map: "PK_Order_Details")
+  @@index([OrderID], map: "OrderID")
+  @@index([OrderID], map: "OrdersOrder_Details")
+  @@index([ProductID], map: "ProductID")
+  @@index([ProductID], map: "ProductsOrder_Details")
+  @@map("Order Details")
+}
+
+model Orders {
+  OrderID        Int             @id(map: "PK_Orders") @default(autoincrement())
+  CustomerID     String?         @db.NChar(5)
+  EmployeeID     Int?
+  OrderDate      DateTime?       @db.DateTime
+  RequiredDate   DateTime?       @db.DateTime
+  ShippedDate    DateTime?       @db.DateTime
+  ShipVia        Int?
+  Freight        Float?          @default(0, map: "DF_Orders_Freight") @db.Money
+  ShipName       String?         @db.NVarChar(40)
+  ShipAddress    String?         @db.NVarChar(60)
+  ShipCity       String?         @db.NVarChar(15)
+  ShipRegion     String?         @db.NVarChar(15)
+  ShipPostalCode String?         @db.NVarChar(10)
+  ShipCountry    String?         @db.NVarChar(15)
+  Order_Details  Order_Details[]
+  Customers      Customers?      @relation(fields: [CustomerID], references: [CustomerID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Orders_Customers")
+  Employees      Employees?      @relation(fields: [EmployeeID], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Orders_Employees")
+  Shippers       Shippers?       @relation(fields: [ShipVia], references: [ShipperID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Orders_Shippers")
+
+  @@index([CustomerID], map: "CustomerID")
+  @@index([CustomerID], map: "CustomersOrders")
+  @@index([EmployeeID], map: "EmployeeID")
+  @@index([EmployeeID], map: "EmployeesOrders")
+  @@index([OrderDate], map: "OrderDate")
+  @@index([ShippedDate], map: "ShippedDate")
+  @@index([ShipVia], map: "ShippersOrders")
+  @@index([ShipPostalCode], map: "ShipPostalCode")
+}
+
+model Products {
+  ProductID       Int             @id(map: "PK_Products") @default(autoincrement())
+  ProductName     String          @db.NVarChar(40)
+  SupplierID      Int?
+  CategoryID      Int?
+  QuantityPerUnit String?         @db.NVarChar(20)
+  UnitPrice       Float?          @default(0, map: "DF_Products_UnitPrice") @db.Money
+  UnitsInStock    Int?            @default(0, map: "DF_Products_UnitsInStock") @db.SmallInt
+  UnitsOnOrder    Int?            @default(0, map: "DF_Products_UnitsOnOrder") @db.SmallInt
+  ReorderLevel    Int?            @default(0, map: "DF_Products_ReorderLevel") @db.SmallInt
+  Discontinued    Boolean         @default(false, map: "DF_Products_Discontinued")
+  Order_Details   Order_Details[]
+  Categories      Categories?     @relation(fields: [CategoryID], references: [CategoryID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Products_Categories")
+  Suppliers       Suppliers?      @relation(fields: [SupplierID], references: [SupplierID], onDelete: NoAction, onUpdate: NoAction, map: "FK_Products_Suppliers")
+
+  @@index([CategoryID], map: "CategoriesProducts")
+  @@index([CategoryID], map: "CategoryID")
+  @@index([ProductName], map: "ProductName")
+  @@index([SupplierID], map: "SupplierID")
+  @@index([SupplierID], map: "SuppliersProducts")
+}
+
+model Region {
+  RegionID          Int           @id(clustered: false, map: "PK_Region")
+  RegionDescription String        @db.NChar(50)
+  Territories       Territories[]
+}
+
+model Shippers {
+  ShipperID   Int      @id(map: "PK_Shippers") @default(autoincrement())
+  CompanyName String   @db.NVarChar(40)
+  Phone       String?  @db.NVarChar(24)
+  Orders      Orders[]
+}
+
+model Suppliers {
+  SupplierID   Int        @id(map: "PK_Suppliers") @default(autoincrement())
+  CompanyName  String     @db.NVarChar(40)
+  ContactName  String?    @db.NVarChar(30)
+  ContactTitle String?    @db.NVarChar(30)
+  Address      String?    @db.NVarChar(60)
+  City         String?    @db.NVarChar(15)
+  Region       String?    @db.NVarChar(15)
+  PostalCode   String?    @db.NVarChar(10)
+  Country      String?    @db.NVarChar(15)
+  Phone        String?    @db.NVarChar(24)
+  Fax          String?    @db.NVarChar(24)
+  HomePage     String?    @db.NText
+  Products     Products[]
+
+  @@index([CompanyName], map: "CompanyName")
+  @@index([PostalCode], map: "PostalCode")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B61B174376D") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}
+
+model Territories {
+  TerritoryID          String                @id(clustered: false, map: "PK_Territories") @db.NVarChar(20)
+  TerritoryDescription String                @db.NChar(50)
+  RegionID             Int
+  EmployeeTerritories  EmployeeTerritories[]
+  Region               Region                @relation(fields: [RegionID], references: [RegionID], onUpdate: NoAction, map: "FK_Territories_Region")
+}
